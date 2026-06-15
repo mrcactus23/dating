@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>💕 Date Night Spinner</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Inter:wght@300;400;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #1a0a0f;
+      --bg2:       #2b1020;
+      --blush:     #f7c5d5;
+      --gold:      #f4a259;
+      --cream:     #fdf0f5;
+      --rose:      #e8637a;
+      --deep-rose: #c0445a;
+    }
+
+    body {
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      font-family: 'Inter', sans-serif;
+      color: var(--cream);
+      overflow-x: hidden;
+      padding: 2rem 1rem 4rem;
+    }
+
+    /* Subtle ambient glow */
+    body::before {
+      content: '';
+      position: fixed;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(232,99,122,0.12) 0%, transparent 70%);
+      top: -100px; left: 50%;
+      transform: translateX(-50%);
+      pointer-events: none;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    header .eyebrow {
+      font-size: 0.7rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 0.5rem;
+    }
+
+    header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2rem, 6vw, 3.2rem);
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--blush) 0%, var(--gold) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.1;
+    }
+
+    header p {
+      margin-top: 0.6rem;
+      font-size: 0.9rem;
+      color: rgba(253,240,245,0.55);
+      font-weight: 300;
+    }
+
+    /* ── Wheel wrapper ── */
+    .wheel-section {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2rem;
+    }
+
+    .wheel-outer {
+      position: relative;
+      width: min(360px, 90vw);
+      height: min(360px, 90vw);
+    }
+
+    /* Glow ring behind wheel */
+    .wheel-outer::before {
+      content: '';
+      position: absolute;
+      inset: -12px;
+      border-radius: 50%;
+      background: conic-gradient(from 0deg, var(--rose), var(--gold), var(--blush), var(--deep-rose), var(--rose));
+      opacity: 0.35;
+      filter: blur(10px);
+      animation: glowPulse 3s ease-in-out infinite;
+    }
+
+    @keyframes glowPulse {
+      0%, 100% { opacity: 0.25; }
+      50%       { opacity: 0.5;  }
+    }
+
+    canvas#wheel {
+      position: relative;
+      z-index: 2;
+      border-radius: 50%;
+      cursor: pointer;
+      display: block;
+    }
+
+    /* Pointer arrow */
+    .pointer {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) translateX(calc(min(360px, 90vw) / 2 - 18px));
+      z-index: 10;
+      width: 0;
+      height: 0;
+      border-top: 14px solid transparent;
+      border-bottom: 14px solid transparent;
+      border-right: 30px solid var(--gold);
+      filter: drop-shadow(0 0 6px rgba(244,162,89,0.8));
+    }
+
+    /* Center button */
+    .spin-btn {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      border: none;
+      background: linear-gradient(135deg, var(--rose), var(--deep-rose));
+      color: var(--cream);
+      font-family: 'Playfair Display', serif;
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: 0 0 0 4px var(--bg2), 0 0 20px rgba(232,99,122,0.5);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .spin-btn:hover { transform: translate(-50%, -50%) scale(1.1); box-shadow: 0 0 0 4px var(--bg2), 0 0 30px rgba(232,99,122,0.7); }
+    .spin-btn:active { transform: translate(-50%, -50%) scale(0.96); }
+    .spin-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: translate(-50%,-50%); }
+
+    /* ── Result card ── */
+    .result-card {
+      width: min(380px, 90vw);
+      background: linear-gradient(135deg, rgba(43,16,32,0.95), rgba(26,10,15,0.98));
+      border: 1px solid rgba(247,197,213,0.18);
+      border-radius: 20px;
+      padding: 1.8rem 2rem;
+      text-align: center;
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+      pointer-events: none;
+    }
+    .result-card.visible {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .result-card .label {
+      font-size: 0.65rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 0.5rem;
+    }
+
+    .result-card .activity {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.6rem, 5vw, 2.2rem);
+      font-weight: 900;
+      color: var(--blush);
+      line-height: 1.2;
+    }
+
+    .result-card .emoji {
+      font-size: 2.5rem;
+      margin-bottom: 0.4rem;
+      display: block;
+    }
+
+    .result-card .sub {
+      margin-top: 0.5rem;
+      font-size: 0.8rem;
+      color: rgba(253,240,245,0.45);
+    }
+
+    /* ── Confetti ── */
+    .confetti-piece {
+      position: fixed;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      pointer-events: none;
+      animation: confettiFall var(--dur) ease-in forwards;
+      z-index: 999;
+    }
+
+    @keyframes confettiFall {
+      0%   { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
+      100% { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(0.3); opacity: 0; }
+    }
+
+    /* ── Footer ── */
+    footer {
+      margin-top: 3rem;
+      font-size: 0.7rem;
+      color: rgba(253,240,245,0.2);
+      text-align: center;
+      letter-spacing: 0.05em;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <p class="eyebrow">✦ tonight's plan ✦</p>
+    <h1>Date Night<br/>Spinner</h1>
+    <p>Spin the wheel, let fate decide 💕</p>
+  </header>
+
+  <div class="wheel-section">
+    <div class="wheel-outer">
+      <canvas id="wheel"></canvas>
+      <div class="pointer"></div>
+      <button class="spin-btn" id="spinBtn">SPIN</button>
+    </div>
+
+    <div class="result-card" id="resultCard">
+      <span class="emoji" id="resultEmoji">💕</span>
+      <div class="label">Tonight's Activity</div>
+      <div class="activity" id="resultText">—</div>
+      <div class="sub" id="resultSub">Have fun together! 🥂</div>
+    </div>
+  </div>
+
+  <footer>Made with love &amp; a little randomness ✦</footer>
+
+  <script>
+    const ACTIVITIES = [
+      { name: "Urut Kaki",  emoji: "🦶", sub: "Relax & unwind together~",          color: "#c05fa0" },
+      { name: "Spa Onsen",  emoji: "♨️",  sub: "Soak it all away, you deserve it!", color: "#e8637a" },
+      { name: "Dinner",     emoji: "🍽️",  sub: "Dress up, eat good, be fancy!",     color: "#f4a259" },
+      { name: "TRX Movie",  emoji: "🎬",  sub: "Grab popcorn & snuggle up!",        color: "#9b5de5" },
+      { name: "Tidur",      emoji: "😴",  sub: "Sometimes rest IS the date 💤",     color: "#5ba4cf" },
+      { name: "69",         emoji: "💋",  sub: "You already know 😏",               color: "#d64e75" },
+    ];
+
+    const N = ACTIVITIES.length;
+    const canvas = document.getElementById('wheel');
+    const ctx = canvas.getContext('2d');
+    const spinBtn = document.getElementById('spinBtn');
+    const resultCard = document.getElementById('resultCard');
+    const resultText = document.getElementById('resultText');
+    const resultEmoji = document.getElementById('resultEmoji');
+    const resultSub = document.getElementById('resultSub');
+
+    // Responsive size
+    function getSize() {
+      return Math.min(360, window.innerWidth * 0.88);
+    }
+
+    let SIZE = getSize();
+    canvas.width = SIZE;
+    canvas.height = SIZE;
+    const R = SIZE / 2;
+
+    // Arc per segment
+    const ARC = (2 * Math.PI) / N;
+
+    // Extra inner colors for gradient feel
+    const INNER = ["#ff9eb5","#ffb97a","#e9a0f5","#a0d4ff","#ff8fa8","#ff7096"];
+
+    let currentAngle = 0; // rotation offset in radians
+    let spinning = false;
+
+    function drawWheel(rotation) {
+      ctx.clearRect(0, 0, SIZE, SIZE);
+      ctx.save();
+      ctx.translate(R, R);
+      ctx.rotate(rotation);
+
+      for (let i = 0; i < N; i++) {
+        const start = i * ARC;
+        const end   = start + ARC;
+        const act   = ACTIVITIES[i];
+
+        // Segment
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.arc(0, 0, R - 4, start, end);
+        ctx.closePath();
+
+        // Radial gradient per slice
+        const gx = Math.cos(start + ARC / 2) * R * 0.5;
+        const gy = Math.sin(start + ARC / 2) * R * 0.5;
+        const grad = ctx.createRadialGradient(gx, gy, 0, 0, 0, R);
+        grad.addColorStop(0, INNER[i]);
+        grad.addColorStop(1, act.color);
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        // Divider
+        ctx.strokeStyle = 'rgba(26,10,15,0.6)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Label
+        ctx.save();
+        ctx.rotate(start + ARC / 2);
+        ctx.textAlign = 'right';
+        ctx.fillStyle = 'rgba(255,255,255,0.97)';
+
+        // Emoji
+        ctx.font = `${SIZE * 0.07}px serif`;
+        ctx.fillText(act.emoji, R - SIZE * 0.04, SIZE * 0.025);
+
+        // Name
+        ctx.font = `700 ${SIZE * 0.056}px 'Inter', sans-serif`;
+        ctx.shadowColor = 'rgba(0,0,0,0.4)';
+        ctx.shadowBlur = 4;
+        ctx.fillText(act.name, R - SIZE * 0.14, SIZE * 0.02);
+        ctx.restore();
+      }
+
+      // Center circle
+      ctx.beginPath();
+      ctx.arc(0, 0, SIZE * 0.1, 0, 2 * Math.PI);
+      ctx.fillStyle = '#1a0a0f';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(247,197,213,0.3)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    drawWheel(currentAngle);
+
+    // Spin logic
+    spinBtn.addEventListener('click', () => {
+      if (spinning) return;
+      spinning = true;
+      spinBtn.disabled = true;
+      resultCard.classList.remove('visible');
+
+      // Random extra spins + landing
+      const extraSpins  = 5 + Math.random() * 4;          // 5–9 full rotations
+      const targetSlice = Math.floor(Math.random() * N);  // which slice to land on
+      // The pointer is at angle 0 on the right (3 o'clock). We rotate the wheel so that
+      // the center of targetSlice ends up at angle 0 (pointing right).
+      const sliceCenter = targetSlice * ARC + ARC / 2;
+      const finalAngle  = currentAngle + extraSpins * 2 * Math.PI + (2 * Math.PI - sliceCenter - currentAngle % (2 * Math.PI));
+
+      const duration = 4200 + Math.random() * 800; // ms
+      const startTime = performance.now();
+      const startAngle = currentAngle;
+
+      function easeOut(t) {
+        // Cubic ease-out with a nice slow finish
+        return 1 - Math.pow(1 - t, 3.5);
+      }
+
+      function animate(now) {
+        const elapsed = now - startTime;
+        const t = Math.min(elapsed / duration, 1);
+        const angle = startAngle + (finalAngle - startAngle) * easeOut(t);
+        currentAngle = angle;
+        drawWheel(currentAngle);
+
+        if (t < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          // Done
+          spinning = false;
+          spinBtn.disabled = false;
+          showResult(targetSlice);
+        }
+      }
+
+      requestAnimationFrame(animate);
+    });
+
+    function showResult(index) {
+      const act = ACTIVITIES[index];
+      resultEmoji.textContent = act.emoji;
+      resultText.textContent  = act.name;
+      resultSub.textContent   = act.sub;
+      resultCard.classList.add('visible');
+      fireConfetti(act.color);
+    }
+
+    function fireConfetti(mainColor) {
+      const colors = [mainColor, '#f7c5d5', '#f4a259', '#fdf0f5', '#e8637a', '#ffffff'];
+      const cx = window.innerWidth / 2;
+      const cy = window.innerHeight * 0.42;
+
+      for (let i = 0; i < 55; i++) {
+        const el = document.createElement('div');
+        el.className = 'confetti-piece';
+        const angle  = Math.random() * 2 * Math.PI;
+        const dist   = 80 + Math.random() * 260;
+        const dx     = Math.cos(angle) * dist;
+        const dy     = Math.sin(angle) * dist - 40;
+        const dur    = 0.8 + Math.random() * 0.7;
+        const rot    = Math.round(Math.random() * 720 - 360) + 'deg';
+        const size   = 5 + Math.random() * 8;
+        const shape  = Math.random() > 0.5 ? '50%' : '2px';
+
+        el.style.cssText = `
+          left: ${cx}px; top: ${cy}px;
+          width: ${size}px; height: ${size}px;
+          border-radius: ${shape};
+          background: ${colors[Math.floor(Math.random() * colors.length)]};
+          --dx: ${dx}px; --dy: ${dy}px; --rot: ${rot}; --dur: ${dur}s;
+        `;
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), dur * 1000 + 100);
+      }
+    }
+
+    // Resize
+    window.addEventListener('resize', () => {
+      SIZE = getSize();
+      canvas.width = SIZE;
+      canvas.height = SIZE;
+      drawWheel(currentAngle);
+    });
+  </script>
+</body>
+</html>
