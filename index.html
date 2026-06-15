@@ -258,7 +258,7 @@
       { name: "Dinner",     emoji: "🍽️",  sub: "Dress up, eat good, be fancy!",     color: "#f4a259" },
       { name: "TRX Movie",  emoji: "🎬",  sub: "Grab popcorn & snuggle up!",        color: "#9b5de5" },
       { name: "Tidur",      emoji: "😴",  sub: "Sometimes rest IS the date 💤",     color: "#5ba4cf" },
-      { name: "Cafe Date",  emoji: "☕",  sub: "Work, sip & vibe together~",        color: "#8b5e3c" },
+      { name: "Study Date @ Cafe", emoji: "☕", sub: "Laptops out, lattes in 📚",    color: "#8b5e3c" },
     ];
 
     const N = ACTIVITIES.length;
@@ -372,20 +372,24 @@
       spinBtn.disabled = true;
       resultCard.classList.remove('visible');
 
-      // Random extra spins + landing
-      const extraSpins  = 5 + Math.random() * 4;          // 5–9 full rotations
-      const targetSlice = Math.floor(Math.random() * N);  // which slice to land on
-      // The pointer is at angle 0 on the right (3 o'clock). We rotate the wheel so that
-      // the center of targetSlice ends up at angle 0 (pointing right).
-      const sliceCenter = targetSlice * ARC + ARC / 2;
-      const finalAngle  = currentAngle + extraSpins * 2 * Math.PI + (2 * Math.PI - sliceCenter - currentAngle % (2 * Math.PI));
+      // Pick target slice, compute exact final angle so arrow & result always match
+      const targetSlice = Math.floor(Math.random() * N);
+      const extraSpins  = 5 + Math.floor(Math.random() * 4); // 5-8 full rotations
 
-      const duration = 4200 + Math.random() * 800; // ms
-      const startTime = performance.now();
+      // Pointer is at 3 o'clock (angle 0). After rotating by finalAngle,
+      // slice i covers [finalAngle + i*ARC, finalAngle + (i+1)*ARC].
+      // We want pointer (0) at CENTER of targetSlice:
+      //   finalAngle + targetSlice*ARC + ARC/2 = -2*PI*k  for some integer k
+      // => finalAngle = -(targetSlice*ARC + ARC/2) - 2*PI*k
+      const baseAngle  = -(targetSlice * ARC + ARC / 2);
+      const turns      = Math.ceil((currentAngle - baseAngle) / (2 * Math.PI)) + extraSpins;
+      const finalAngle = baseAngle + turns * 2 * Math.PI;
+
+      const duration   = 4200 + Math.random() * 800;
+      const startTime  = performance.now();
       const startAngle = currentAngle;
 
       function easeOut(t) {
-        // Cubic ease-out with a nice slow finish
         return 1 - Math.pow(1 - t, 3.5);
       }
 
@@ -399,10 +403,12 @@
         if (t < 1) {
           requestAnimationFrame(animate);
         } else {
-          // Done
+          // Derive winner from actual final angle (ground truth)
+          const normalized = ((-currentAngle % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+          const landed = Math.floor(normalized / ARC) % N;
           spinning = false;
           spinBtn.disabled = false;
-          showResult(targetSlice);
+          showResult(landed);
         }
       }
 
